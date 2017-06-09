@@ -1,0 +1,65 @@
+package com.sentiment
+ 
+import com.sentiment.SentimentAnalysis;
+import java.util.Vector;		  // vector
+import java.util.*;				  // Map
+import com.sentiment.SentimentAnalysis.Sentiment;
+
+global Integer totalPoint;
+global Integer totalNegative;
+global Integer totalPositive;
+
+rule "set total"
+	when
+	then
+		totalPoint = 0;
+		totalNegative = 0;
+		totalPositive = 0;
+		kcontext.getKieRuntime().setGlobal("totalPoint", totalPoint);
+		kcontext.getKieRuntime().setGlobal("totalNegative", totalNegative);
+		kcontext.getKieRuntime().setGlobal("totalPositive", totalPositive);
+end
+
+rule "Check All Words in Dictionary"
+    when
+     	$sen:Sentiment()
+    	Map.Entry($key: key, $val: value) from ($sen.getDictionary().entrySet())
+    	Map.Entry($keyChild: key, $valChild: value) from ($sen.getPosition((String)$key).entrySet())
+    then
+     	totalPoint += (Integer)$val;
+     	System.out.println($key + " " + totalPoint);
+     	kcontext.getKieRuntime().setGlobal("totalPoint", totalPoint);
+end	 
+
+rule "Count positive"
+    when
+     	$sen:Sentiment()
+    	Map.Entry($key: key, $val: value) from ($sen.getDictionary().entrySet())
+    	Map.Entry($keyChild: key, $valChild: value) from ($sen.getPosition((String)$key).entrySet())
+    	eval((Integer)$val < 0)
+    then
+     	totalNegative += (Integer)$val;
+     	System.out.println($key + " " + totalNegative);
+     	kcontext.getKieRuntime().setGlobal("totalNegative", totalNegative);
+end	
+
+rule "Count negative"
+    when
+     	$sen:Sentiment()
+    	Map.Entry($key: key, $val: value) from ($sen.getDictionary().entrySet())
+    	Map.Entry($keyChild: key, $valChild: value) from ($sen.getPosition((String)$key).entrySet())
+    	eval((Integer)$val > 0)
+    then
+     	totalPositive += (Integer)$val;
+     	System.out.println($key + " " + totalPositive);
+     	kcontext.getKieRuntime().setGlobal("totalPositive", totalPositive);
+end	
+
+rule "Evaluate"
+	when 
+	then
+		System.out.println("Positive points: " + totalPositive + " " + 
+		(double)(totalPositive / (double)(totalPositive - totalNegative)));
+		System.out.println("Negative points: " + totalNegative + " " +
+		(double)(-totalNegative / (double)(totalPositive - totalNegative)));
+end
